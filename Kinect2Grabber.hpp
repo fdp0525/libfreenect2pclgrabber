@@ -362,7 +362,7 @@ public:
 		tmp_depth_ = cv::Mat(depth_->height, depth_->width, CV_32FC1, depth_->data);
 		remapDepth(tmp_depth_,depth_final_,cv::Size(size_x, size_y),CV_32FC1);
 
-		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC3, rgb_->data);
+		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC4, rgb_->data);
 		//cv::remap(tmp_rgb_, rgb_final_, map_x_rgb_, map_y_rgb_, cv::INTER_LINEAR);
 		rgb_final_ = tmp_rgb_;
 		cv::flip(depth_final_, depth_final_, 1);
@@ -396,7 +396,7 @@ public:
 		tmp_depth_ = cv::Mat(depth_->height, depth_->width, CV_32FC1, depth_->data);
 		remapDepth(tmp_depth_,depth_final_,cv::Size(size_x,size_y),CV_32FC1);
 
-		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC3, rgb_->data);
+		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC4, rgb_->data);
 		//cv::remap(tmp_rgb_, rgb_final_, map_x_rgb_, map_y_rgb_, cv::INTER_LINEAR);
 		rgb_final_ = tmp_rgb_;
 		cv::flip(depth_final_, depth_final_, 1);
@@ -425,7 +425,7 @@ public:
 		tmp_depth_ = cv::Mat(depth_->height, depth_->width, CV_32FC1, depth_->data);
 		remapDepth(tmp_depth_,depth_final_,cv::Size(size_x,size_y),CV_32FC1);
 
-		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC3, rgb_->data);
+		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC4, rgb_->data);
 		//cv::remap(tmp_rgb_, rgb_final_, map_x_rgb_, map_y_rgb_, cv::INTER_LINEAR);
 		rgb_final_ = tmp_rgb_;
 		cv::flip(depth_final_, depth_final_, 1);
@@ -454,7 +454,7 @@ public:
 		tmp_depth_ = cv::Mat(depth_->height, depth_->width, CV_32FC1, depth_->data);
 		
 
-		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC3, rgb_->data);
+		tmp_rgb_ = cv::Mat(rgb_->height, rgb_->width, CV_8UC4, rgb_->data);
 		rgb_final_ = tmp_rgb_;
 		cv::flip(tmp_depth_, tmp_depth_, 1);
 		cv::flip(rgb_final_, rgb_final_, 1);
@@ -525,7 +525,12 @@ private:
 	void
 	init(const int size_x=512 , const int size_y=424){
 		initSizeAndData(size_x,size_y);
+#ifdef HAVE_OPENMP
 		unsigned threads = omp_get_max_threads();
+#else
+        /// @todo handle this better
+        unsigned threads = 1;
+#endif 
 		partial_clouds_.resize(threads);
 		for(int i = 0; i < threads; ++i)
 			partial_clouds_[i].reserve((size_x * size_y) / threads + 1 );
@@ -534,7 +539,12 @@ private:
 
 	void
 	initAutoRegistered(const int size_x=512 , const int size_y=424){
+#ifdef HAVE_OPENMP
 		unsigned threads = omp_get_max_threads();
+#else
+        /// @todo handle this better
+        unsigned threads = 1;
+#endif 
 		partial_clouds_.resize(threads);
 		for(int i = 0; i < threads; ++i)
 			partial_clouds_[i].reserve((size_x * size_y) / threads + 1 );
@@ -773,7 +783,9 @@ private:
 			init_rototranslation_ = true;
 		}
 
+#ifdef HAVE_OPENMP
 		#pragma omp parallel for
+#endif
 		for(int y = 0; y < depth.rows; ++y)
 		{	
 			PointT *itP = &cloud->points[y * depth.cols];
@@ -836,8 +848,9 @@ private:
 		d_matrix(3,2) = 0;
 		d_matrix(3,3) = 1;
 
-
+#ifdef HAVE_OPENMP
 		#pragma omp parallel for
+#endif
 		for(int y = 0; y < depth.rows; ++y)
 		{	
 			PointT *itP = &cloud->points[y * depth.cols];
@@ -927,7 +940,9 @@ private:
 		int newone = 0;
 
 
-//		#pragma omp parallel for
+#ifdef HAVE_OPENMP
+		//#pragma omp parallel for
+#endif
 		for(int y = 0; y < color.rows; ++y)
 		{	
 			for(size_t x = 0; x < (size_t)color.cols; ++x)
@@ -981,7 +996,9 @@ private:
 			init_rototranslation_ = true;
 		}
 
+#ifdef HAVE_OPENMP
 		#pragma omp parallel for
+#endif
 		for(int y = 0; y < depth.rows; ++y)
 		{	
 			PointT itP;
@@ -1014,7 +1031,12 @@ private:
 					itP.b = tmp.val[0];
 					itP.g = tmp.val[1];
 					itP.r = tmp.val[2];
-					partial_clouds_[omp_get_thread_num()].push_back(itP);
+#ifdef HAVE_OPENMP
+                    unsigned thread_num = omp_get_thread_num();
+#else
+                    unsigned thread_num = 0;
+#endif
+					partial_clouds_[thread_num].push_back(itP);
 				}
 			}
 		}
@@ -1070,7 +1092,9 @@ private:
 		scaled.create(size_registered, type);
 		if(type == CV_16U)
 		{
-			#pragma omp parallel for
+#ifdef HAVE_OPENMP
+		#pragma omp parallel for
+#endif
 			for(size_t r = 0; r < (size_t)size_registered.height; ++r)
 			{
 				uint16_t *itO = scaled.ptr<uint16_t>(r);
@@ -1084,7 +1108,10 @@ private:
 		}
 		else
 		{
-			#pragma omp parallel for
+            
+#ifdef HAVE_OPENMP
+		#pragma omp parallel for
+#endif
 			for(size_t r = 0; r < (size_t)size_registered.height; ++r)
 			{
 				float *itO = scaled.ptr<float>(r);
@@ -1128,10 +1155,10 @@ private:
 
 		const float avg = (pLT + pRT + pLB + pRB) / count;
 		const float thres = 0.01 * avg;
-		vLT = abs(pLT - avg) < thres;
-		vRT = abs(pRT - avg) < thres;
-		vLB = abs(pLB - avg) < thres;
-		vRB = abs(pRB - avg) < thres;
+		vLT = std::abs(pLT - avg) < thres;
+		vRT = std::abs(pRT - avg) < thres;
+		vLB = std::abs(pLB - avg) < thres;
+		vRB = std::abs(pRB - avg) < thres;
 		count = vLT + vRT + vLB + vRB;
 
 		if(count < 3)
@@ -1270,7 +1297,7 @@ public:
 
 	CvFrame(Kinect2Grabber<PointT> & k): grabber_(k){
 		freenect_data_ = grabber_.getRgbFrame();
-		data_ = cv::Mat(freenect_data_->height, freenect_data_->width, CV_8UC3, freenect_data_->data);
+		data_ = cv::Mat(freenect_data_->height, freenect_data_->width, CV_8UC4, freenect_data_->data);
 	}
 
 	~CvFrame(){
