@@ -818,7 +818,9 @@ private:
 					itP->x = pworld.x() ;
 					itP->y = pworld.y() ;
 
-					const cv::Vec3b tmp = color.at<cv::Vec3b>(rgb_img.y(), rgb_img.x());
+					//const cv::Vec3b tmp = color.at<cv::Vec3b>(rgb_img.y(), rgb_img.x());
+					const cv::Vec4b tmp = color.at<cv::Vec4b>(rgb_img.y(), rgb_img.x());
+
 					itP->b = tmp.val[0];
 					itP->g = tmp.val[1];
 					itP->r = tmp.val[2];
@@ -884,7 +886,8 @@ private:
 					itP->y = pworld.y() ;
 
 
-					const cv::Vec3b tmp = color.at<cv::Vec3b>(y_color, x_color);
+					//const cv::Vec3b tmp = color.at<cv::Vec3b>(y_color, x_color);
+					const cv::Vec4b tmp = color.at<cv::Vec4b>(y_color, x_color);
 					itP->b = tmp.val[0];
 					itP->g = tmp.val[1];
 					itP->r = tmp.val[2];
@@ -947,7 +950,8 @@ private:
 		{	
 			for(size_t x = 0; x < (size_t)color.cols; ++x)
 			{
-				const cv::Vec3b ptcolor = color.at<cv::Vec3b>(y, x);
+				//const cv::Vec3b ptcolor = color.at<cv::Vec3b>(y, x);
+				const cv::Vec4b ptcolor = color.at<cv::Vec4b>(y, x);
 
 				Eigen::Vector3d rgb_i(x,y,1); // 2D homo
 				Eigen::Vector3d depth_sub_i = rgb2depth * rgb_i; // to 2D homo
@@ -1027,7 +1031,9 @@ private:
 					itP.z = depth_value;
 					itP.x = pworld.x() ;
 					itP.y = pworld.y() ;
-					const cv::Vec3b tmp = color.at<cv::Vec3b>(rgb_img.y(), rgb_img.x());
+					//const cv::Vec3b tmp = color.at<cv::Vec3b>(rgb_img.y(), rgb_img.x());
+					const cv::Vec4b tmp = color.at<cv::Vec4b>(rgb_img.y(), rgb_img.x());
+
 					itP.b = tmp.val[0];
 					itP.g = tmp.val[1];
 					itP.r = tmp.val[2];
